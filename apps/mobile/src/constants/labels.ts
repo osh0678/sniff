@@ -1,4 +1,11 @@
-import type { AdClaimAssessment, IngredientConcern, ProductReport, ScoreCap } from '@sniff/core';
+import type {
+  AdClaimAssessment,
+  IngredientConcern,
+  ProductReport,
+  ScoreCap,
+  SourceType,
+  Stance,
+} from '@sniff/core';
 
 import {
   CheckIcon,
@@ -51,7 +58,23 @@ export const SUBSCORE_LABELS = {
   adHonesty: '광고 정직도',
   ingredients: '성분 안전성',
   value: '가격 대비 가치',
+  sourceReliability: '근거 출처 신뢰도',
 } as const;
+
+export const SOURCE_TYPE_LABELS: Record<SourceType, string> = {
+  shop_review: '쇼핑몰 리뷰',
+  blog: '블로그',
+  community: '커뮤니티',
+  official: '공식 자료',
+  news: '기사',
+  other: '기타',
+};
+
+export const STANCE_LABELS: Record<Stance, Label> = {
+  positive: { text: '긍정적', tone: 'pass', icon: CheckIcon },
+  mixed: { text: '엇갈림', tone: 'caution', icon: WarningIcon },
+  negative: { text: '부정적', tone: 'fail', icon: XCircleIcon },
+};
 
 /** Mirrors the thresholds in @sniff/core scoring. */
 export function toneForScore(score: number | null): Tone {

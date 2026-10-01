@@ -18,6 +18,19 @@ export type IngredientConcern = z.infer<typeof IngredientConcernSchema>;
 
 export const RatingSchema = z.enum(['recommended', 'consider', 'not_recommended', 'insufficient_data']);
 
+export const SourceTypeSchema = z.enum([
+  'shop_review',
+  'blog',
+  'community',
+  'official',
+  'news',
+  'other',
+]);
+export type SourceType = z.infer<typeof SourceTypeSchema>;
+
+export const StanceSchema = z.enum(['positive', 'mixed', 'negative']);
+export type Stance = z.infer<typeof StanceSchema>;
+
 const SubscoreSchema = z.object({
   score: score.nullable().describe('0-100, null이면 근거 부족 또는 해당 없음'),
   rationale: z.string(),
@@ -44,6 +57,15 @@ export const ModelAnalysisSchema = z.object({
     pros: z.array(z.string()),
     cons: z.array(z.string()),
     authenticityFlags: z.array(z.string()).describe('협찬/체험단/조작 리뷰 의심 신호'),
+    communityFindings: z
+      .array(
+        z.object({
+          community: z.string().describe('클리앙, 디시인사이드, 뽐뿌 등 실제로 확인한 커뮤니티 이름'),
+          stance: StanceSchema,
+          summary: z.string().describe('그 커뮤니티에서 확인한 의견 요약'),
+        }),
+      )
+      .describe('커뮤니티에서 실제로 확인한 의견. 찾지 못했으면 빈 배열'),
   }),
   adClaims: z.array(
     z.object({
@@ -64,12 +86,27 @@ export const ModelAnalysisSchema = z.object({
       }),
     ),
   }),
-  sources: z.array(z.object({ title: z.string(), url: z.string() })),
+  sources: z.array(
+    z.object({
+      title: z.string(),
+      url: z.string(),
+      type: SourceTypeSchema.describe('출처 유형'),
+      community: z.string().nullable().describe('type이 community일 때 커뮤니티 이름, 아니면 null'),
+    }),
+  ),
 });
 export type ModelAnalysis = z.infer<typeof ModelAnalysisSchema>;
 
+export const SourceReliabilitySchema = z.object({
+  score: score.nullable(),
+  communityFound: z.boolean(),
+  sourceCounts: z.record(SourceTypeSchema, z.number().int()),
+});
+export type SourceReliability = z.infer<typeof SourceReliabilitySchema>;
+
 export const ProductReportSchema = ModelAnalysisSchema.extend({
   query: z.string(),
+  sourceReliability: SourceReliabilitySchema,
   verdict: z.object({
     overallScore: score.nullable(),
     rating: RatingSchema,

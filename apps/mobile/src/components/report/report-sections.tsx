@@ -16,7 +16,14 @@ import {
 } from '@/components/icons';
 import { ThemedText } from '@/components/themed-text';
 import { Divider, FindingList, Meter, Section, Stamp } from '@/components/ui';
-import { CLAIM_LABELS, CONCERN_LABELS, SUBSCORE_LABELS, toneForScore } from '@/constants/labels';
+import {
+  CLAIM_LABELS,
+  CONCERN_LABELS,
+  SOURCE_TYPE_LABELS,
+  STANCE_LABELS,
+  SUBSCORE_LABELS,
+  toneForScore,
+} from '@/constants/labels';
 import { IconSize, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -45,6 +52,16 @@ export function SubscoresSection({ report }: ReportProps) {
           />
         );
       })}
+      <Meter
+        label={SUBSCORE_LABELS.sourceReliability}
+        score={report.sourceReliability.score}
+        tone={toneForScore(report.sourceReliability.score)}
+        rationale={
+          report.sourceReliability.communityFound
+            ? '쇼핑몰·블로그·커뮤니티 등 출처의 다양성과 협찬 신호로 계산했어요.'
+            : '커뮤니티에서 확인된 후기가 없어 출처 다양성이 낮게 반영됐어요.'
+        }
+      />
     </Section>
   );
 }
@@ -77,11 +94,38 @@ export function AdClaimsSection({ report }: ReportProps) {
 }
 
 export function ReviewsSection({ report }: ReportProps) {
-  const { summary, pros, cons, authenticityFlags } = report.reviews;
+  const { summary, pros, cons, authenticityFlags, communityFindings } = report.reviews;
   return (
     <Section icon={ChatCircleTextIcon} title="리뷰 분석" caption={summary}>
       {pros.length > 0 ? <FindingList items={pros} icon={PlusIcon} tone="pass" /> : null}
       {cons.length > 0 ? <FindingList items={cons} icon={MinusIcon} tone="fail" /> : null}
+      <View style={styles.group}>
+        <ThemedText variant="label" color="inkMuted">
+          커뮤니티에서 확인한 의견
+        </ThemedText>
+        {communityFindings.length === 0 ? (
+          <ThemedText variant="caption" color="inkMuted">
+            클리앙·디시인사이드 등 커뮤니티에서 근거를 찾지 못했어요.
+          </ThemedText>
+        ) : (
+          communityFindings.map((finding) => {
+            const label = STANCE_LABELS[finding.stance];
+            return (
+              <View key={finding.community + finding.summary} style={styles.finding}>
+                <View style={styles.row}>
+                  <ThemedText variant="bodyStrong" style={styles.flex}>
+                    {finding.community}
+                  </ThemedText>
+                  <Stamp label={label.text} tone={label.tone} icon={label.icon} />
+                </View>
+                <ThemedText variant="caption" color="inkMuted">
+                  {finding.summary}
+                </ThemedText>
+              </View>
+            );
+          })
+        )}
+      </View>
       {authenticityFlags.length > 0 ? (
         <View style={styles.group}>
           <ThemedText variant="label" color="inkMuted">
@@ -157,7 +201,9 @@ export function SourcesSection({ report }: ReportProps) {
           <View style={styles.flex}>
             <ThemedText numberOfLines={2}>{source.title || source.host}</ThemedText>
             <ThemedText variant="mono" color="inkMuted">
-              {source.host}
+              {[SOURCE_TYPE_LABELS[source.type], source.community, source.host]
+                .filter(Boolean)
+                .join(' · ')}
             </ThemedText>
           </View>
           <ArrowSquareOutIcon size={IconSize.small} color={theme.accent} />

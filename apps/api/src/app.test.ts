@@ -18,7 +18,7 @@ const analysis: ModelAnalysis = {
     ingredients: { score: 85, rationale: '' },
     value: { score: 80, rationale: '' },
   },
-  reviews: { summary: '', pros: ['순함'], cons: [], authenticityFlags: [] },
+  reviews: { summary: '', pros: ['순함'], cons: [], authenticityFlags: [], communityFindings: [] },
   adClaims: [],
   ingredients: { applicable: true, summary: '', items: [] },
   sources: [],

@@ -1,3 +1,5 @@
+import type { SourceReliability, SourceType } from './schemas';
+
 export type Rating = 'recommended' | 'consider' | 'not_recommended' | 'insufficient_data';
 export type ScoreCap = 'false_ad_claim' | 'high_concern_ingredient';
 
@@ -6,6 +8,8 @@ export interface Subscores {
   adHonesty: number | null;
   ingredients: number | null;
   value: number | null;
+  /** Computed in code from source diversity, not by the model. */
+  sourceReliability: number | null;
 }
 
 export interface VerdictInput {
@@ -21,10 +25,11 @@ export interface Verdict {
 }
 
 export const SUBSCORE_WEIGHTS: Readonly<Record<keyof Subscores, number>> = {
-  reviews: 0.35,
+  reviews: 0.3,
   adHonesty: 0.25,
-  ingredients: 0.2,
-  value: 0.2,
+  ingredients: 0.15,
+  value: 0.15,
+  sourceReliability: 0.15,
 };
 
 /** Below this share of total weight we refuse to give a verdict. */
@@ -70,4 +75,48 @@ export function computeVerdict(input: VerdictInput): Verdict {
   const overallScore = caps.length > 0 ? Math.min(rounded, RED_FLAG_SCORE_CAP) : rounded;
 
   return { overallScore, rating: ratingFor(overallScore), caps };
+}
+
+const REVIEW_SOURCE_TYPES: readonly SourceType[] = ['shop_review', 'blog', 'community'];
+const RELIABILITY_BASE = 30;
+const POINTS_PER_REVIEW_TYPE = 15;
+const COMMUNITY_BONUS = 15;
+const POINTS_PER_REVIEW_SOURCE = 3;
+const MAX_COUNTED_REVIEW_SOURCES = 6;
+const PENALTY_PER_FLAG = 5;
+const MAX_COUNTED_FLAGS = 4;
+
+/**
+ * How trustworthy the review evidence is, judged from where it came from:
+ * more kinds of independent review sources (shop / blog / community), actual
+ * community discussion, and fewer sponsorship/manipulation flags score higher.
+ * Null when no review-type source was found at all.
+ */
+export function computeSourceReliability(
+  sources: readonly { type: SourceType }[],
+  authenticityFlagCount: number,
+): SourceReliability {
+  const sourceCounts: Record<SourceType, number> = {
+    shop_review: 0,
+    blog: 0,
+    community: 0,
+    official: 0,
+    news: 0,
+    other: 0,
+  };
+  for (const source of sources) sourceCounts[source.type] += 1;
+
+  const reviewTypes = REVIEW_SOURCE_TYPES.filter((type) => sourceCounts[type] > 0);
+  const reviewSourceCount = reviewTypes.reduce((sum, type) => sum + sourceCounts[type], 0);
+  const communityFound = sourceCounts.community > 0;
+  if (reviewSourceCount === 0) return { score: null, communityFound, sourceCounts };
+
+  const raw =
+    RELIABILITY_BASE +
+    reviewTypes.length * POINTS_PER_REVIEW_TYPE +
+    (communityFound ? COMMUNITY_BONUS : 0) +
+    Math.min(reviewSourceCount, MAX_COUNTED_REVIEW_SOURCES) * POINTS_PER_REVIEW_SOURCE -
+    Math.min(authenticityFlagCount, MAX_COUNTED_FLAGS) * PENALTY_PER_FLAG;
+
+  return { score: Math.max(0, Math.min(100, raw)), communityFound, sourceCounts };
 }

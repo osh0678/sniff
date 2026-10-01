@@ -14,7 +14,7 @@ function makeAnalysis(overrides: Partial<ModelAnalysis> = {}): ModelAnalysis {
       ingredients: { score: 80, rationale: '' },
       value: { score: 80, rationale: '' },
     },
-    reviews: { summary: '', pros: [], cons: [], authenticityFlags: [] },
+    reviews: { summary: '', pros: [], cons: [], authenticityFlags: [], communityFindings: [] },
     adClaims: [],
     ingredients: { applicable: true, summary: '', items: [] },
     sources: [],

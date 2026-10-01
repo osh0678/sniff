@@ -15,10 +15,10 @@ const validAnalysis = {
     ingredients: { score: 60, rationale: '' },
     value: { score: 50, rationale: '' },
   },
-  reviews: { summary: '', pros: [], cons: [], authenticityFlags: [] },
+  reviews: { summary: '', pros: [], cons: [], authenticityFlags: [], communityFindings: [] },
   adClaims: [],
   ingredients: { applicable: true, summary: '', items: [] },
-  sources: [{ title: 'src', url: 'https://example.com' }],
+  sources: [{ title: 'src', url: 'https://example.com', type: 'other', community: null }],
 };
 
 function message(overrides: Partial<BetaMessage>): BetaMessage {
